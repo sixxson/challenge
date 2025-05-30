@@ -4,11 +4,13 @@ export default function Dashboard() {
   const [favorites, setFavorites] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
+  const phone = localStorage.getItem("phone");
 
   useEffect(() => {
     const fetchFavorites = async () => {
+      if (!phone) return;
       try {
-        const res = await fetch("http://localhost:5000/api/favorites");
+        const res = await fetch(`http://localhost:5000/api/favorites?phone_number=${phone}`);
         const data = await res.json();
         setFavorites(data);
       } catch (err) {
@@ -17,12 +19,12 @@ export default function Dashboard() {
     };
 
     fetchFavorites();
-  }, []);
+  }, [phone]);
 
   const handleUserClick = async (id) => {
     try {
-      const res = await fetch(`https://api.github.com/user/${id}`);
-      const data = await res.json();
+      const findGithubUserProfile = await fetch(`https://api.github.com/user/${id}`);
+      const data = await findGithubUserProfile.json();
       setSelectedUser(data);
       setShowPopup(true);
     } catch (err) {
@@ -35,13 +37,47 @@ export default function Dashboard() {
     setSelectedUser(null);
   };
 
+  const isFavorited = (id) => favorites.some((u) => u.id === id);
+
+  const toggleFavorite = async (user) => {
+    try {
+      if (isFavorited(user.id)) {
+        await fetch(`http://localhost:5000/api/favorites/${user.id}?phone_number=${phone}`, {
+          method: "DELETE",
+        });
+        setFavorites(favorites.filter((fav) => fav.id !== user.id));
+      } else {
+        await fetch("http://localhost:5000/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone_number: phone,
+            id: user.id,
+            login: user.login,
+            avatar_url: user.avatar_url,
+            html_url: user.html_url,
+          }),
+        });
+        setFavorites([...favorites, user]);
+      }
+    } catch (err) {
+      console.error("Lỗi khi cập nhật yêu thích:", err);
+    }
+  };
+
+  if (!phone) {
+    return (
+      <div className="p-4 max-w-4xl mx-auto">
+        <p className="text-red-600">Vui lòng xác thực OTP để xem dashboard.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
 
-      <h2 className="text-xl font-semibold mb-3">
-        ⭐ Hồ sơ GitHub đã yêu thích:
-      </h2>
+      <h2 className="text-xl font-semibold mb-3">⭐ Hồ sơ GitHub đã yêu thích:</h2>
 
       {favorites.length === 0 ? (
         <p>Chưa có hồ sơ nào được yêu thích.</p>
@@ -51,7 +87,7 @@ export default function Dashboard() {
             <div
               key={user.id}
               onClick={() => handleUserClick(user.id)}
-              className="p-4 bg-white shadow rounded cursor-pointer hover:bg-gray-50"
+              className="p-4 bg-white shadow rounded cursor-pointer hover:bg-gray-50 relative"
             >
               <img
                 src={user.avatar_url}
@@ -69,6 +105,15 @@ export default function Dashboard() {
               >
                 Xem trên GitHub
               </a>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(user);
+                }}
+                className="absolute top-2 right-2 text-red-500 text-xl"
+              >
+                {isFavorited(user.id) ? "❤️" : "🤍"}
+              </button>
             </div>
           ))}
         </div>

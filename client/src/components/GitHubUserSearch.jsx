@@ -22,20 +22,26 @@ export default function GitHubUserSearch() {
 
     setLoading(true);
     try {
-      const res = await fetch(
+      const searchGithubUsers = await fetch(
         `https://api.github.com/search/users?q=${search}&page=${
           currentPage + 1
         }&per_page=${perPage}`
       );
-      const data = await res.json();
+      const data = await searchGithubUsers.json();
 
       const items = data.items || [];
       setTotalPages(Math.ceil(Math.min(data.total_count, 1000) / perPage)); // GitHub API chỉ cho max 1000 kết quả
 
       const detailedUsers = await Promise.all(
         items.map(async (user) => {
-          const res = await fetch(`https://api.github.com/users/${user.login}`);
-          const detail = await res.json();
+          const REACT_APP_GITHUB_TOKEN = process.env.REACT_APP_GITHUB_TOKEN;
+          const findGithubUserProfile = await fetch(`https://api.github.com/user/${user.id}`, {
+            headers: {
+              Authorization: `token ${REACT_APP_GITHUB_TOKEN}`,
+              Accept: 'application/vnd.github+json',
+            },
+          });
+          const detail = await findGithubUserProfile.json();
           return {
             id: user.id,
             login: user.login,
@@ -56,28 +62,43 @@ export default function GitHubUserSearch() {
   };
 
   const fetchFavorites = async () => {
+    const phone = localStorage.getItem("phone");
+    if (!phone) return;
+
     try {
-      const res = await fetch("http://localhost:5000/api/favorites");
+      const res = await fetch(
+        `http://localhost:5000/api/favorites?phone_number=${phone}`
+      );
       const data = await res.json();
-      setFavorites(data.map((u) => u.id)); // assuming backend returns array of users
+      setFavorites(data.map((u) => u.id)); // danh sách id yêu thích
     } catch (error) {
       console.error("Error fetching favorites:", error);
     }
   };
 
   const toggleFavorite = async (user) => {
+    const phone = localStorage.getItem("phone");
+    if (!phone) {
+      alert("Bạn cần xác thực số điện thoại trước!");
+      return;
+    }
+
     const isFavorited = favorites.includes(user.id);
     try {
       if (isFavorited) {
-        await fetch(`http://localhost:5000/api/favorites/${user.id}`, {
-          method: "DELETE",
-        });
+        await fetch(
+          `http://localhost:5000/api/favorites/${user.id}?phone_number=${phone}`,
+          {
+            method: "DELETE",
+          }
+        );
         setFavorites((prev) => prev.filter((id) => id !== user.id));
       } else {
         await fetch("http://localhost:5000/api/favorites", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            phone_number: phone,
             id: user.id,
             login: user.login,
             avatar_url: user.avatar_url,
@@ -91,9 +112,16 @@ export default function GitHubUserSearch() {
     }
   };
 
-  //  fetchFavorites 1 lần duy nhất khi app load
+  //  fetchFavorites only 1 time app load
   useEffect(() => {
-    fetchFavorites();
+    const phone = localStorage.getItem("phone");
+    if (!phone) {
+      alert(
+        "Vui lòng đăng nhập/xác thực số điện thoại trước khi sử dụng tính năng yêu thích."
+      );
+    } else {
+      fetchFavorites();
+    }
   }, []);
 
   //  query, page, perPage cho fetchUsers
@@ -271,7 +299,7 @@ export default function GitHubUserSearch() {
             previousLinkClassName="px-4 py-2 text-gray-700 bg-white border rounded-md hover:bg-gray-100"
             nextLinkClassName="px-4 py-2 text-gray-700 bg-white border rounded-md hover:bg-gray-100"
             disabledClassName="opacity-50 cursor-not-allowed"
-            activeClassName="bg-blue-500 text-white"
+            activeClassName="bg-[#3b82f6] text-white"
             forcePage={page}
           />
         )}

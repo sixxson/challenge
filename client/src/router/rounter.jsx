@@ -2,6 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
 import Dashboard from "../page/dashboard";
 import Home from "../page/home";
+import VerifyOtp from "../components/verify-otp";
+import OTPGuard from "../components/OTPGuard"; // thêm guard
 
 const router = createBrowserRouter([
   {
@@ -10,11 +12,23 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <Home />,
+        element: (
+          <OTPGuard>
+            <Home />
+          </OTPGuard>
+        ),
       },
       {
         path: "/dashboard",
-        element: <Dashboard />,
+        element: (
+          <OTPGuard>
+            <Dashboard />
+          </OTPGuard>
+        ),
+      },
+      {
+        path: "/verify-otp",
+        element: <VerifyOtp />,
       },
     ],
   },

@@ -1,16 +1,16 @@
 const {
-  getAllFavorites,
-  postAddFavorites,
+  getUserProfile,
+  postLikeGithubUser,
   deleteFavorites,
 } = require("../controllers/favoritesController");
 const express = require("express");
 const router = express.Router();
 
 // GET all favorites
-router.get("/", getAllFavorites);
+router.get("/", getUserProfile);
 
 // POST add to favorites
-router.post("/", postAddFavorites);
+router.post("/", postLikeGithubUser);
 
 // DELETE remove from favorites
 router.delete("/:id", deleteFavorites);

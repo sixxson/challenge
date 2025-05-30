@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
+import { useNavigate } from "react-router-dom";
 
 const normalizePhone = (input) => {
   let val = input.trim();
@@ -17,6 +18,7 @@ export default function VerifyOtp() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [showOtpInput, setShowOtpInput] = useState(false);
+  const navigate = useNavigate();
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -59,7 +61,9 @@ export default function VerifyOtp() {
 
       if (res.ok) {
         toast.success(data.message);
+        localStorage.setItem("otpVerified", "true"); // lưu trạng thái đã xác thực
         localStorage.setItem("phone", normalizedPhone);
+        navigate("/"); // ✅ chuyển hướng
       } else {
         toast.error(data.message);
       }

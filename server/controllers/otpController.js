@@ -4,20 +4,17 @@ const sendWhatsapp = require("../services/sendWhatsapp");
 // Tạm lưu OTP
 const otpStore = new Map();
 
-const sendOtp = async (req, res) => {
+const CreateNewAccessCode = async (req, res) => {
   let { phoneNumber } = req.body;
 
   if (!phoneNumber) {
     return res.status(400).json({ message: "Thiếu số điện thoại" });
   }
 
-  // // Normalize lại server-side (phòng trường hợp client chưa làm)
-  // if (phoneNumber.startsWith("+84")) {
-  //   phoneNumber = phoneNumber.replace("+84", "84");
-  // }
-  // if (phoneNumber.startsWith("0")) {
-  //   phoneNumber = "84" + phoneNumber.slice(1);
-  // }
+  // Normalize lại server-side (phòng trường hợp client chưa làm)
+  if (phoneNumber.startsWith("0")) {
+    phoneNumber = "+84" + phoneNumber.slice(1);
+  }
 
   const otp = generateOtp();
   otpStore.set(phoneNumber, otp);
@@ -31,7 +28,7 @@ const sendOtp = async (req, res) => {
   }
 };
 
-const verifyOtp = (req, res) => {
+const ValidateAccessCode = (req, res) => {
   const { phoneNumber, otp } = req.body;
   const savedOtp = otpStore.get(phoneNumber);
 
@@ -45,4 +42,4 @@ const verifyOtp = (req, res) => {
   }
 };
 
-module.exports = { sendOtp, verifyOtp };
+module.exports = { CreateNewAccessCode, ValidateAccessCode };
