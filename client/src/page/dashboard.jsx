@@ -1,30 +1,33 @@
+import { LayoutGrid, LayoutList } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const [favorites, setFavorites] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
+  const [viewMode, setViewMode] = useState("grid"); // 👉 NEW
   const phone = localStorage.getItem("phone");
 
   useEffect(() => {
     const fetchFavorites = async () => {
       if (!phone) return;
       try {
-        const res = await fetch(`http://localhost:5000/api/favorites?phone_number=${phone}`);
+        const res = await fetch(
+          `http://localhost:5000/api/favorites?phone_number=${phone}`
+        );
         const data = await res.json();
         setFavorites(data);
       } catch (err) {
         console.error("Lỗi tải favorites:", err);
       }
     };
-
     fetchFavorites();
   }, [phone]);
 
   const handleUserClick = async (id) => {
     try {
-      const findGithubUserProfile = await fetch(`https://api.github.com/user/${id}`);
-      const data = await findGithubUserProfile.json();
+      const res = await fetch(`https://api.github.com/user/${id}`);
+      const data = await res.json();
       setSelectedUser(data);
       setShowPopup(true);
     } catch (err) {
@@ -42,9 +45,12 @@ export default function Dashboard() {
   const toggleFavorite = async (user) => {
     try {
       if (isFavorited(user.id)) {
-        await fetch(`http://localhost:5000/api/favorites/${user.id}?phone_number=${phone}`, {
-          method: "DELETE",
-        });
+        await fetch(
+          `http://localhost:5000/api/favorites/${user.id}?phone_number=${phone}`,
+          {
+            method: "DELETE",
+          }
+        );
         setFavorites(favorites.filter((fav) => fav.id !== user.id));
       } else {
         await fetch("http://localhost:5000/api/favorites", {
@@ -65,42 +71,45 @@ export default function Dashboard() {
     }
   };
 
-  if (!phone) {
-    return (
-      <div className="p-4 max-w-4xl mx-auto">
-        <p className="text-red-600">Vui lòng xác thực OTP để xem dashboard.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+        <button
+          onClick={() => setViewMode(viewMode === "grid" ? "table" : "grid")}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          {viewMode === "grid" ? <LayoutList /> : <LayoutGrid />}
+        </button>
+      </div>
 
-      <h2 className="text-xl font-semibold mb-3">⭐ Hồ sơ GitHub đã yêu thích:</h2>
+      <h2 className="text-xl font-semibold mb-4 text-gray-700">
+        ⭐ Hồ sơ GitHub đã yêu thích
+      </h2>
 
       {favorites.length === 0 ? (
-        <p>Chưa có hồ sơ nào được yêu thích.</p>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <p className="text-gray-500">Chưa có hồ sơ nào được yêu thích.</p>
+      ) : viewMode === "grid" ? (
+        // ✅ Grid View
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {favorites.map((user) => (
             <div
               key={user.id}
               onClick={() => handleUserClick(user.id)}
-              className="p-4 bg-white shadow rounded cursor-pointer hover:bg-gray-50 relative"
+              className="p-4 bg-white shadow-md rounded-xl cursor-pointer transition hover:shadow-lg relative"
             >
               <img
                 src={user.avatar_url}
-                className="w-16 h-16 rounded-full mb-2"
                 alt={user.login}
+                className="w-16 h-16 rounded-full border-2 border-gray-300 mb-3"
               />
-              <h3 className="font-bold">{user.login}</h3>
-              <p>ID: {user.id}</p>
+              <h3 className="font-semibold text-gray-800">{user.login}</h3>
+              <p className="text-sm text-gray-500">ID: {user.id}</p>
               <a
                 href={user.html_url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-500 underline mt-2 inline-block"
+                className="text-blue-600 text-sm underline mt-2 inline-block"
                 onClick={(e) => e.stopPropagation()}
               >
                 Xem trên GitHub
@@ -110,40 +119,102 @@ export default function Dashboard() {
                   e.stopPropagation();
                   toggleFavorite(user);
                 }}
-                className="absolute top-2 right-2 text-red-500 text-xl"
+                className="absolute top-3 right-3 text-2xl hover:scale-110 transition"
               >
                 {isFavorited(user.id) ? "❤️" : "🤍"}
               </button>
             </div>
           ))}
         </div>
+      ) : (
+        // ✅ Table View
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border rounded-lg shadow-md">
+            <thead>
+              <tr className="bg-gray-100 text-left text-gray-600">
+                <th className="px-4 py-2">Avatar</th>
+                <th className="px-4 py-2">Login</th>
+                <th className="px-4 py-2">ID</th>
+                <th className="px-4 py-2">Link</th>
+                <th className="px-4 py-2">❤️</th>
+              </tr>
+            </thead>
+            <tbody>
+              {favorites.map((user) => (
+                <tr
+                  key={user.id}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleUserClick(user.id)}
+                >
+                  <td className="px-4 py-2">
+                    <img
+                      src={user.avatar_url}
+                      alt={user.login}
+                      className="w-10 h-10 rounded-full border"
+                    />
+                  </td>
+                  <td className="px-4 py-2">{user.login}</td>
+                  <td className="px-4 py-2">{user.id}</td>
+                  <td className="px-4 py-2">
+                    <a
+                      href={user.html_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-blue-600 underline"
+                    >
+                      GitHub
+                    </a>
+                  </td>
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(user);
+                      }}
+                      className="text-xl"
+                    >
+                      {isFavorited(user.id) ? "❤️" : "🤍"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* Popup */}
       {showPopup && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-[90%] max-w-md relative animate-fadeIn">
             <button
               onClick={closePopup}
-              className="absolute top-2 right-2 text-gray-600 hover:text-black text-lg"
+              className="absolute top-2 right-2 text-gray-500 hover:text-black text-xl"
             >
               ✕
             </button>
-            <div className="flex flex-col items-center">
+            <div className="text-center">
               <img
                 src={selectedUser.avatar_url}
-                className="w-20 h-20 rounded-full mb-4"
                 alt={selectedUser.login}
+                className="w-24 h-24 rounded-full mx-auto mb-4 border"
               />
-              <h2 className="text-xl font-bold mb-2">{selectedUser.login}</h2>
-              <p>ID: {selectedUser.id}</p>
-              <p>Public Repos: {selectedUser.public_repos}</p>
-              <p>Followers: {selectedUser.followers}</p>
+              <h2 className="text-xl font-bold text-gray-800">
+                {selectedUser.login}
+              </h2>
+              <p className="text-gray-600">ID: {selectedUser.id}</p>
+              <p className="text-gray-600">
+                Public Repos: {selectedUser.public_repos}
+              </p>
+              <p className="text-gray-600">
+                Followers: {selectedUser.followers}
+              </p>
               <a
                 href={selectedUser.html_url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-500 underline mt-2"
+                className="text-blue-600 underline mt-2 inline-block"
               >
                 Xem trên GitHub
               </a>

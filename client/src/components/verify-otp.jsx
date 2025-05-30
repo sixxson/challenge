@@ -77,7 +77,7 @@ export default function VerifyOtp() {
   return (
     <form
       onSubmit={showOtpInput ? handleVerifyOtp : handleSendOtp}
-      className="space-y-4 w-full max-w-sm mx-auto mt-10"
+      className="space-y-4 w-full max-w-sm mx-auto mt-20"
     >
       {!showOtpInput ? (
         <>
