@@ -12,11 +12,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: (
-          <OTPGuard>
-            <Home />
-          </OTPGuard>
-        ),
+        element: <Home />,
       },
       {
         path: "/dashboard",

@@ -5,8 +5,9 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 require("dotenv").config();
 
-const otpRoutes = require("./routes/otpRoutes");
-const favoriteRoutes = require("./routes/favoritesRouter");
+const otpRoutes = require("./router/otpRouter");
+const favoriteRoutes = require("./router/favoritesRouter");
+const githubRouter = require("./router/githubRouter");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,6 +18,7 @@ mongoose.connect(process.env.MONGODB_URI);
 
 // Routes
 app.use("/api", otpRoutes);
+app.use("/api/github", githubRouter);
 app.use("/api/favorites", favoriteRoutes);
 
 // Fallback route

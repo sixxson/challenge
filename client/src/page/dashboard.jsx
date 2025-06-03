@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   const handleUserClick = async (id) => {
     try {
-      const res = await fetch(`https://api.github.com/user/${id}`);
+      const res = await fetch(`http://localhost:5000/api/github/findGithubUserProfile/${id}`);
       const data = await res.json();
       setSelectedUser(data);
       setShowPopup(true);

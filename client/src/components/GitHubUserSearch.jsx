@@ -1,8 +1,10 @@
-import { Search } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import { Search, TriangleAlert, X } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
 import ReactPaginate from "react-paginate";
 import { Link } from "react-router-dom";
-// import { Button } from "./ui/button";
+import { Button } from "./ui/button";
+
 export default function GitHubUserSearch() {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState([]);
@@ -14,56 +16,79 @@ export default function GitHubUserSearch() {
   const [favorites, setFavorites] = useState([]);
   const [submittedQuery, setSubmittedQuery] = useState("");
 
-  const fetchUsers = async (search, currentPage) => {
-    if (!search) {
-      setUsers([]);
-      return;
-    }
+  const fetchUsers = useCallback(
+    async (search, currentPage) => {
+      if (!search) {
+        setUsers([]);
+        return;
+      }
 
-    setLoading(true);
-    try {
-      const searchGithubUsers = await fetch(
-        `https://api.github.com/search/users?q=${search}&page=${
-          currentPage + 1
-        }&per_page=${perPage}`
-      );
-      const data = await searchGithubUsers.json();
+      setLoading(true);
+      try {
+        const searchGithubUsers = await fetch(
+          `http://localhost:5000/api/github/searchGithubUsers?q=${search}&page=${
+            currentPage + 1
+          }&per_page=${perPage}`
+        );
+        const data = await searchGithubUsers.json();
 
-      const items = data.items || [];
-      setTotalPages(Math.ceil(Math.min(data.total_count, 1000) / perPage)); // GitHub API chỉ cho max 1000 kết quả
+        const items = data.items || [];
+        setTotalPages(Math.ceil(Math.min(data.total_count, 1000) / perPage)); // GitHub API giới hạn 1000 kết quả
 
-      const detailedUsers = await Promise.all(
-        items.map(async (user) => {
-          const REACT_APP_GITHUB_TOKEN = process.env.REACT_APP_GITHUB_TOKEN;
-          const findGithubUserProfile = await fetch(`https://api.github.com/user/${user.id}`, {
-            headers: {
-              Authorization: `token ${REACT_APP_GITHUB_TOKEN}`,
-              Accept: 'application/vnd.github+json',
-            },
-          });
-          const detail = await findGithubUserProfile.json();
-          return {
-            id: user.id,
-            login: user.login,
-            avatar_url: user.avatar_url,
-            html_url: user.html_url,
-            public_repos: detail.public_repos,
-            followers: detail.followers,
-          };
-        })
-      );
+        const detailedUsers = await Promise.all(
+          items.map(async (user) => {
+            const REACT_APP_GITHUB_TOKEN = process.env.REACT_APP_GITHUB_TOKEN;
+            const findGithubUserProfile = await fetch(
+              `https://api.github.com/user/${user.id}`,
+              {
+                headers: {
+                  Authorization: `token ${REACT_APP_GITHUB_TOKEN}`,
+                  Accept: "application/vnd.github+json",
+                },
+              }
+            );
+            const detail = await findGithubUserProfile.json();
+            const { id, login, avatar_url, html_url } = user;
+            const { public_repos, followers } = detail;
+            return { id, login, avatar_url, html_url, public_repos, followers };
+          })
+        );
 
-      setUsers(detailedUsers);
-    } catch (error) {
-      console.error("API Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setUsers(detailedUsers);
+      } catch (error) {
+        console.error("API Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [perPage] // chỉ tạo lại nếu `perPage` thay đổi
+  );
 
   const fetchFavorites = async () => {
     const phone = localStorage.getItem("phone");
-    if (!phone) return;
+    if (!phone) {
+      toast.custom((t) => (
+        <div className="bg-white shadow-lg rounded-md px-4 py-2 max-w-md">
+          <p className=" text-red-500 font-semibold">
+            <TriangleAlert className="" size={20} />
+            Vui lòng đăng nhập/xác thực số điện thoại trước khi sử dụng tính
+            năng yêu thích.
+          </p>
+          <div className="flex justify-between items-center">
+            <Button className="" onPageChange={'/verify-otp'}>Xác minh So die thoai</Button>
+            <button
+              // onClick={() => {
+              //   toast.dismiss(t.id);
+              // }}
+              onPageChange={'/verify-otp'}
+              className="mt-2 px-4 py-1 bg-blue-500 hover:text-red-500 hover:bg-white text-white rounded"
+            >
+              <X />
+            </button>
+          </div>
+        </div>
+      ));
+    }
 
     try {
       const res = await fetch(
@@ -78,10 +103,6 @@ export default function GitHubUserSearch() {
 
   const toggleFavorite = async (user) => {
     const phone = localStorage.getItem("phone");
-    if (!phone) {
-      alert("Bạn cần xác thực số điện thoại trước!");
-      return;
-    }
 
     const isFavorited = favorites.includes(user.id);
     try {
@@ -115,11 +136,26 @@ export default function GitHubUserSearch() {
   //  fetchFavorites only 1 time app load
   useEffect(() => {
     const phone = localStorage.getItem("phone");
+
     if (!phone) {
-      alert(
-        "Vui lòng đăng nhập/xác thực số điện thoại trước khi sử dụng tính năng yêu thích."
-      );
-    } else {
+      toast.custom((t) => (
+        <div className="bg-white shadow-lg rounded-md px-4 py-2 max-w-sm flex items-center">
+          <p className=" text-red-500 font-semibold">
+            <TriangleAlert className="" size={20} />
+            Vui lòng đăng nhập/xác thực số điện thoại trước khi sử dụng tính
+            năng yêu thích.
+          </p>
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+            }}
+            className="mt-2 px-4 py-1 bg-blue-500 hover:text-red-500 hover:bg-white text-white rounded"
+          >
+            <X />
+          </button>
+        </div>
+      ));
+    } else if (phone) {
       fetchFavorites();
     }
   }, []);
@@ -129,7 +165,7 @@ export default function GitHubUserSearch() {
     if (submittedQuery) {
       fetchUsers(submittedQuery, page);
     }
-  }, [submittedQuery, page, perPage]);
+  }, [submittedQuery, page, fetchUsers]);
 
   const handlePageClick = ({ selected }) => {
     setPage(selected);

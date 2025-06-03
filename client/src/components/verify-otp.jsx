@@ -61,9 +61,9 @@ export default function VerifyOtp() {
 
       if (res.ok) {
         toast.success(data.message);
-        localStorage.setItem("otpVerified", "true"); // lưu trạng thái đã xác thực
+        localStorage.setItem("otpVerified", "true");
         localStorage.setItem("phone", normalizedPhone);
-        navigate("/"); // ✅ chuyển hướng
+        navigate("/"); 
       } else {
         toast.error(data.message);
       }
