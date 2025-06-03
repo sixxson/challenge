@@ -5,6 +5,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "./ui/input-otp";
 import { useNavigate } from "react-router-dom";
+import { RotateCcw } from "lucide-react";
 
 const normalizePhone = (input) => {
   let val = input.trim();
@@ -63,7 +64,7 @@ export default function VerifyOtp() {
         toast.success(data.message);
         localStorage.setItem("otpVerified", "true");
         localStorage.setItem("phone", normalizedPhone);
-        navigate("/"); 
+        navigate("/");
       } else {
         toast.error(data.message);
       }
@@ -79,21 +80,7 @@ export default function VerifyOtp() {
       onSubmit={showOtpInput ? handleVerifyOtp : handleSendOtp}
       className="space-y-4 w-full max-w-sm mx-auto mt-20"
     >
-      {!showOtpInput ? (
-        <>
-          <label className="block font-medium">Số điện thoại:</label>
-          <Input
-            type="tel"
-            placeholder="VD: 0901234567"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-          />
-          <Button type="submit" disabled={loading}>
-            {loading ? "Đang gửi..." : "Gửi mã OTP"}
-          </Button>
-        </>
-      ) : (
+      {showOtpInput ? (
         <>
           <label className="block font-medium">Nhập mã OTP:</label>
           <InputOTP
@@ -109,8 +96,39 @@ export default function VerifyOtp() {
               ))}
             </InputOTPGroup>
           </InputOTP>
+          <div className="flex gap-2 justify-between">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Đang xác thực..." : "Xác nhận OTP"}
+            </Button>
+            <button
+              type="button"
+              variant="outline"
+              disabled={loading}
+              onClick={handleSendOtp}
+              className="text-blue-500 hover:underline font-semibold"
+            >
+              {loading ? (
+                "Đang gửi lại..."
+              ) : (
+                <p className="flex items-center">
+                  <RotateCcw /> Gửi lại mã
+                </p>
+              )}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <label className="block font-medium">Số điện thoại:</label>
+          <Input
+            type="tel"
+            placeholder="VD: 0901234567"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
           <Button type="submit" disabled={loading}>
-            {loading ? "Đang xác thực..." : "Xác nhận OTP"}
+            {loading ? "Đang gửi..." : "Gửi mã OTP"}
           </Button>
         </>
       )}

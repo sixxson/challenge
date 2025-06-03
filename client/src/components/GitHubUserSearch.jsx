@@ -2,8 +2,7 @@ import { Search, TriangleAlert, X } from "lucide-react";
 import React, { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import ReactPaginate from "react-paginate";
-import { Link } from "react-router-dom";
-import { Button } from "./ui/button";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function GitHubUserSearch() {
   const [query, setQuery] = useState("");
@@ -31,25 +30,21 @@ export default function GitHubUserSearch() {
           }&per_page=${perPage}`
         );
         const data = await searchGithubUsers.json();
-
-        const items = data.items || [];
+        console.log(data);
+        // setUsers(data)
+        const items = data || [];
         setTotalPages(Math.ceil(Math.min(data.total_count, 1000) / perPage)); // GitHub API giới hạn 1000 kết quả
 
         const detailedUsers = await Promise.all(
           items.map(async (user) => {
-            const REACT_APP_GITHUB_TOKEN = process.env.REACT_APP_GITHUB_TOKEN;
             const findGithubUserProfile = await fetch(
-              `https://api.github.com/user/${user.id}`,
-              {
-                headers: {
-                  Authorization: `token ${REACT_APP_GITHUB_TOKEN}`,
-                  Accept: "application/vnd.github+json",
-                },
-              }
+              `http://localhost:5000/api/github/findGithubUserProfile/${user.id}`
             );
             const detail = await findGithubUserProfile.json();
+
             const { id, login, avatar_url, html_url } = user;
             const { public_repos, followers } = detail;
+
             return { id, login, avatar_url, html_url, public_repos, followers };
           })
         );
@@ -66,29 +61,6 @@ export default function GitHubUserSearch() {
 
   const fetchFavorites = async () => {
     const phone = localStorage.getItem("phone");
-    if (!phone) {
-      toast.custom((t) => (
-        <div className="bg-white shadow-lg rounded-md px-4 py-2 max-w-md">
-          <p className=" text-red-500 font-semibold">
-            <TriangleAlert className="" size={20} />
-            Vui lòng đăng nhập/xác thực số điện thoại trước khi sử dụng tính
-            năng yêu thích.
-          </p>
-          <div className="flex justify-between items-center">
-            <Button className="" onPageChange={'/verify-otp'}>Xác minh So die thoai</Button>
-            <button
-              // onClick={() => {
-              //   toast.dismiss(t.id);
-              // }}
-              onPageChange={'/verify-otp'}
-              className="mt-2 px-4 py-1 bg-blue-500 hover:text-red-500 hover:bg-white text-white rounded"
-            >
-              <X />
-            </button>
-          </div>
-        </div>
-      ));
-    }
 
     try {
       const res = await fetch(
@@ -134,38 +106,47 @@ export default function GitHubUserSearch() {
   };
 
   //  fetchFavorites only 1 time app load
+  useEffect(() => {}, []);
+
+  //  query, page, perPage cho fetchUsers
+  const navigate = useNavigate();
   useEffect(() => {
     const phone = localStorage.getItem("phone");
 
     if (!phone) {
       toast.custom((t) => (
-        <div className="bg-white shadow-lg rounded-md px-4 py-2 max-w-sm flex items-center">
+        <div className="bg-white shadow-lg rounded-md px-4 py-2 max-w-sm flex flex-col items-center">
           <p className=" text-red-500 font-semibold">
             <TriangleAlert className="" size={20} />
             Vui lòng đăng nhập/xác thực số điện thoại trước khi sử dụng tính
             năng yêu thích.
           </p>
-          <button
-            onClick={() => {
-              toast.dismiss(t.id);
-            }}
-            className="mt-2 px-4 py-1 bg-blue-500 hover:text-red-500 hover:bg-white text-white rounded"
-          >
-            <X />
-          </button>
+          <div className="flex justify-between w-full">
+            <button
+              onClick={() => navigate("/verify-otp") && toast.dismiss(t.id)}
+              className="mt-2 px-4 py-1 font-semibold bg-blue-500 hover:text-blue-500 hover:bg-white text-white rounded"
+            >
+              Xác minh ngay
+            </button>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+              }}
+              className="mt-2 px-4 py-1 bg-red-600 hover:text-red-500 hover:bg-white text-white rounded"
+            >
+              <X />
+            </button>
+          </div>
         </div>
       ));
     } else if (phone) {
       fetchFavorites();
     }
-  }, []);
 
-  //  query, page, perPage cho fetchUsers
-  useEffect(() => {
     if (submittedQuery) {
       fetchUsers(submittedQuery, page);
     }
-  }, [submittedQuery, page, fetchUsers]);
+  }, [submittedQuery, page, fetchUsers, navigate]);
 
   const handlePageClick = ({ selected }) => {
     setPage(selected);
